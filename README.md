@@ -80,6 +80,9 @@ Fixed-step:
 ## My Expended Experiment
 This file can find at '20245494.ipynb'
 With the incorporation of checkpointing into the adjoint method, I've managed to enhance both the memory efficiency and solver flexibility of the existing ODE solver implementation. These advancements provide a scalable solution for handling large and complex systems, making Neural ODEs and similar models more accessible for practical applications in areas such as healthcare, finance, and real-time monitoring.
+> Result
+> ![image](https://github.com/user-attachments/assets/7f919687-a3f7-4e16-be55-719c8e3d29b9)
+> ![image](https://github.com/user-attachments/assets/83236cbe-a44c-4233-98cb-9810d1dea974)
 
 
 
