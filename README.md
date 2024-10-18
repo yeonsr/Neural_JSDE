@@ -1,19 +1,13 @@
-# Neural_JSDE
+This repository contains code for reproducing the experiments from the paper:
 
+Jia, J., & Benson, A. R. (2019). Neural jump stochastic differential equations. Advances in Neural Information Processing Systems, 32.
 
-# Existing paper code
 # PyTorch Implementation of Differentiable ODE Solvers
 
 This library provides ordinary differential equation (ODE) solvers implemented in PyTorch. Backpropagation through all solvers is supported using the adjoint method. For usage of ODE solvers in deep learning applications, see [1].
 
 As the solvers are implemented in PyTorch, algorithms in this repository are fully supported to run on the GPU.
 
----
-
-<p align="center">
-  <img align="middle" src="./assets/resnet_0_viz.png" alt="Discrete-depth network" width="240" height="330" />
-  <img align="middle" src="./assets/odenet_0_viz.png" alt="Continuous-depth network" width="240" height="330" />
-</p>
 
 ## Installation
 ```
