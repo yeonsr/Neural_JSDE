@@ -1,45 +1,96 @@
-# Overview of Examples
+This repository contains code for reproducing the experiments from the paper:
 
-This `examples` directory contains cleaned up code regarding the usage of adaptive ODE solvers in machine learning. The scripts in this directory assume that `torchdiffeq` is installed following instructions from the main directory.
+Jia, J., & Benson, A. R. (2019). Neural jump stochastic differential equations. Advances in Neural Information Processing Systems, 32.
 
-## Demo
-The `ode_demo.py` file contains a short implementation of learning a dynamics model to mimic a spiral ODE.
+# PyTorch Implementation of Differentiable ODE Solvers
 
-To visualize the training progress, run
+This library provides ordinary differential equation (ODE) solvers implemented in PyTorch. Backpropagation through all solvers is supported using the adjoint method. For usage of ODE solvers in deep learning applications, see [1].
+
+As the solvers are implemented in PyTorch, algorithms in this repository are fully supported to run on the GPU.
+
+
+## Installation
 ```
-python ode_demo.py --viz
+git clone https://github.com/rtqichen/torchdiffeq.git
+cd torchdiffeq
+pip install -e .
 ```
-The training should look similar to this:
+
+## Examples
+Examples are placed in the [`examples`](./examples) directory.
+
+We encourage those who are interested in using this library to take a look at [`examples/ode_demo.py`](./examples/ode_demo.py) for understanding how to use `torchdiffeq` to fit a simple spiral ODE.
 
 <p align="center">
-<img align="middle" src="../assets/ode_demo.gif" alt="ODE Demo" width="500" height="250" />
+<img align="middle" src="./assets/ode_demo.gif" alt="ODE Demo" width="500" height="250" />
 </p>
 
-## ODEnet for MNIST
-The `odenet_mnist.py` file contains a reproduction of the MNIST experiments in our Neural ODE paper. Notably not just the architecture but the ODE solver library and integration method are different from our original experiments, though the results are similar to those we report in the paper.
+## Basic usage
+This library provides one main interface `odeint` which contains general-purpose algorithms for solving initial value problems (IVP), with gradients implemented for all main arguments. An initial value problem consists of an ODE and an initial value,
+```
+dy/dt = f(t, y)    y(t_0) = y_0.
+```
+The goal of an ODE solver is to find a continuous trajectory satisfying the ODE that passes through the initial condition.
 
-We can use an adaptive ODE solver to approximate our continuous-depth network while still backpropagating through the network.
+To solve an IVP using the default solver:
 ```
-python odenet_mnist.py --network odenet
-```
-However, the memory requirements for this will blow up very fast, especially for more complex problems where the number of function evaluations can reach nearly a thousand.
+from torchdiffeq import odeint
 
-For applications that require solving complex trajectories, we recommend using the adjoint method.
+odeint(func, y0, t)
 ```
-python odenet_mnist.py --network odenet --adjoint True
-```
-The adjoint method can be slower when using an adaptive ODE solver as it involves another solve in the backward pass with a much larger system, so experimenting on small systems with direct backpropagation first is recommended.
+where `func` is any callable implementing the ordinary differential equation `f(t, x)`, `y0` is an _any_-D Tensor or a tuple of _any_-D Tensors representing the initial values, and `t` is a 1-D Tensor containing the evaluation points. The initial time is taken to be `t[0]`.
 
-Thankfully, it is extremely easy to write code for both adjoint and non-adjoint backpropagation, as they use the same interface.
-```
-if adjoint:
-    from torchdiffeq import odeint_adjoint as odeint
-else:
-    from torchdiffeq import odeint
-```
-The main gotcha is that `odeint_adjoint` requires implementing the dynamics network as a `nn.Module` while `odeint` can work with any callable in Python.
+Backpropagation through `odeint` goes through the internals of the solver, but this is not supported for all solvers. Instead, we encourage the use of the adjoint method explained in [1], which will allow solving with as many steps as necessary due to O(1) memory usage.
 
-## Continuous Normalizing Flows
-Code for continuous normalizing flows (CNF)  have their own public repository. Tools for training, evaluating, and visualizing CNF for reversible generative modeling are provided along with FFJORD, a linear cost stochastic approximation of CNF.
+To use the adjoint method:
+```
+from torchdiffeq import odeint_adjoint as odeint
 
-Find the code in https://github.com/rtqichen/ffjord. This code contains some advanced tricks for `torchdiffeq`.
+odeint(func, y0, t)
+```
+`odeint_adjoint` simply wraps around `odeint`, but will use only O(1) memory in exchange for solving an adjoint ODE in the backward call.
+
+The biggest **gotcha** is that `func` must be a `nn.Module` when using the adjoint method. This is used to collect parameters of the differential equation.
+
+### Keyword Arguments
+ - `rtol` Relative tolerance.
+ - `atol` Absolute tolerance.
+ - `method` One of the solvers listed below.
+
+#### List of ODE Solvers:
+
+Adaptive-step:
+ - `dopri5` Runge-Kutta 4(5) [default].
+ - `adams` Adaptive-order implicit Adams.
+
+Fixed-step:
+ - `euler` Euler method.
+ - `midpoint` Midpoint method.
+ - `rk4` Fourth-order Runge-Kutta with 3/8 rule.
+ - `explicit_adams` Explicit Adams.
+ - `fixed_adams` Implicit Adams.
+
+
+## My Expended Experiment
+This file can find at '20245494.ipynb'
+With the incorporation of checkpointing into the adjoint method, I've managed to enhance both the memory efficiency and solver flexibility of the existing ODE solver implementation. These advancements provide a scalable solution for handling large and complex systems, making Neural ODEs and similar models more accessible for practical applications in areas such as healthcare, finance, and real-time monitoring.
+> Result
+> ![image](https://github.com/user-attachments/assets/7f919687-a3f7-4e16-be55-719c8e3d29b9)
+> ![image](https://github.com/user-attachments/assets/83236cbe-a44c-4233-98cb-9810d1dea974)
+
+
+
+### References
+[1] Ricky T. Q. Chen, Yulia Rubanova, Jesse Bettencourt, David Duvenaud. "Neural Ordinary Differential Equations." *Advances in Neural Processing Information Systems.* 2018. [[arxiv]](https://arxiv.org/abs/1806.07366)
+
+---
+
+If you found this library useful in your research, please consider citing
+```
+@article{chen2018neural,
+  title={Neural Ordinary Differential Equations},
+  author={Chen, Ricky T. Q. and Rubanova, Yulia and Bettencourt, Jesse and Duvenaud, David},
+  journal={Advances in Neural Information Processing Systems},
+  year={2018}
+}
+```
